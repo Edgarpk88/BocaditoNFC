@@ -305,22 +305,15 @@ function checkNFCAvailability() {
     return false;
 }
 // Función para el botón buscar
-buscarButton.addEventListener('click', () => {
-    buscarContainer.classList.toggle('visible');
-    if (registerContainer.classList.contains('visible')) {
-        registerContainer.classList.remove('visible');
-    }
-});
-// Función para el botón buscar
 buscarOkButton.addEventListener('click', async () => {
     const name = buscarNameInput.value.trim();
     const phone = buscarPhoneInput.value.trim();
     const email = buscarEmailInput.value.trim();
 
     if (!name && !phone && !email) {
-    updateStatus('Por favor, completa al menos un campo de búsqueda', true);
-    return;
-}
+        updateStatus('Por favor, completa al menos un campo de búsqueda', true);
+        return;
+    }
 
     const searchData = {
         name: name,
@@ -330,7 +323,7 @@ buscarOkButton.addEventListener('click', async () => {
     };
 
     try {
-        // Enviar datos al webhook con la etiqueta buscarCliente
+        // Enviar datos al webhook
         const timestamp = new Date().toISOString();
         const url = new URL('https://n8n-n8n.dlyqti.easypanel.host/webhook/fab43c1a-ef5d-43d8-ae52-3e2d891496dd');
         url.searchParams.append('text', 'buscarCLIENTE ' + JSON.stringify(searchData));
@@ -338,41 +331,37 @@ buscarOkButton.addEventListener('click', async () => {
         url.searchParams.append('serialNumber', '');
         url.searchParams.append('action', 'buscarCliente');
 
-const response = await fetch(url, {
-    method: 'GET',
+        const response = await fetch(url, { method: 'GET' });
+        const rawData = await response.text(); // Obtener datos crudos como texto
+
+        // Parsear los datos devueltos
+        const clientData = JSON.parse(rawData.replace(/\\n/g, '').replace(/\\/g, '')); // Limpiar caracteres de escape
+        if (!clientData.name) {
+            updateStatus('Cliente no encontrado', true);
+            return;
+        }
+
+        // Actualizar la información en el bloque de información
+        updateInfoBlock(clientData);
+
+        updateStatus('Cliente encontrado. Acerque el chip para grabar cliente', false);
+    } catch (error) {
+        console.error('Error en la búsqueda:', error);
+        updateStatus('Error al buscar el cliente', true);
+    }
 });
-
-const clientData = await response.json();
-let parsedClientData;
-
-if (Array.isArray(clientData) && clientData[0]?.output) {
-    // Si viene en el formato array con output
-    parsedClientData = JSON.parse(clientData[0].output);
-} else {
-    // Si viene directamente como objeto
-    parsedClientData = clientData;
-}
-
-// Actualizar la información en el bloque de información
-updateInfoBlock({
-    text: parsedClientData,
-    serialNumber: parsedClientData.serialNumber || '-',
-    timestamp: parsedClientData.timestamp
-});
-        // Y asegurarnos que la función updateInfoBlock maneje correctamente los datos:
-function updateInfoBlock(data) {
-    const parsedData = typeof data.text === 'string' ? JSON.parse(data.text) : data.text;
-    currentName.textContent = parsedData.name || '-';
-    currentPhone.textContent = parsedData.phone || '-';
-    currentEmail.textContent = parsedData.email || '-';
-    currentAdress.textContent = parsedData.direccion || '-';
-    currentDiscount.textContent = parsedData.descuento || '-';
-    currentSerial.textContent = parsedData.serialNumber || data.serialNumber || '-';
-    currentTimestamp.textContent = new Date(parsedData.timestamp || data.timestamp).toLocaleString() || '-';
-    document.getElementById('currentclasificacion').textContent = parsedData.clasificacion || '-';
-    document.getElementById('currentPuntos').textContent = parsedData.puntos || '-';
-    document.getElementById('currentvisitas').textContent = parsedData.visitas || '-';
-    document.getElementById('currentnumerocliente').textContent = parsedData.numerocliente || '-';
+      function updateInfoBlock(data) {
+    currentName.textContent = data.name || '-';
+    currentPhone.textContent = data.phone || '-';
+    currentEmail.textContent = data.email || '-';
+    currentAdress.textContent = data.direccion || '-';
+    currentDiscount.textContent = data.descuento || '-';
+    currentSerial.textContent = data.serialNumber || '-';
+    currentTimestamp.textContent = new Date(data.timestamp).toLocaleString() || '-';
+    document.getElementById('currentclasificacion').textContent = data.clasificacion || '-';
+    document.getElementById('currentPuntos').textContent = data.puntos || '-';
+    document.getElementById('currentvisitas').textContent = data.visitas || '-';
+    document.getElementById('currentnumerocliente').textContent = data.numerocliente || '-';
 }
 
         updateStatus('Cliente encontrado. Acerque el chip para grabar cliente', false);
