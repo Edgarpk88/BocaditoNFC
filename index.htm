@@ -8,7 +8,7 @@
         /* Estilos previos sin cambios */
         .signature {
     font-family: 'Playfair Display', serif;
-    font-size: 0.8em;
+    font-size: 0.4em;
     color: #888;
     text-align: center;
     margin-top: 40px;
@@ -239,7 +239,7 @@
             </div>
         </div>
     </div>
-<script>
+ <script>
 // Obtener referencias a los elementos del DOM
 const statusElement = document.getElementById('status');
 const scanButton = document.getElementById('scanButton');
@@ -335,23 +335,16 @@ buscarOkButton.addEventListener('click', async () => {
         const url = new URL('https://n8n-n8n.dlyqti.easypanel.host/webhook/fab43c1a-ef5d-43d8-ae52-3e2d891496dd');
         url.searchParams.append('text', 'buscarCLIENTE ' + JSON.stringify(searchData));
         url.searchParams.append('timestamp', timestamp);
-        url.searchParams.append('serialNumber', '');
+         url.searchParams.append('serialNumber', '');
         url.searchParams.append('action', 'buscarCliente');
 
-const response = await fetch(url, {
-    method: 'GET',
-});
+        const response = await fetch(url, {
+            method: 'GET',
+        });
 
-const clientData = await response.json();
-let parsedClientData;
-
-if (Array.isArray(clientData) && clientData[0]?.output) {
-    // Si viene en el formato array con output
-    parsedClientData = JSON.parse(clientData[0].output);
-} else {
-    // Si viene directamente como objeto
-    parsedClientData = clientData;
-}
+       const clientData = await response.json();
+// Extraer y parsear los datos del objeto anidado
+const parsedClientData = JSON.parse(clientData[0].output);
 
 // Actualizar la información en el bloque de información
 updateInfoBlock({
@@ -359,21 +352,6 @@ updateInfoBlock({
     serialNumber: parsedClientData.serialNumber || '-',
     timestamp: parsedClientData.timestamp
 });
-        // Y asegurarnos que la función updateInfoBlock maneje correctamente los datos:
-function updateInfoBlock(data) {
-    const parsedData = typeof data.text === 'string' ? JSON.parse(data.text) : data.text;
-    currentName.textContent = parsedData.name || '-';
-    currentPhone.textContent = parsedData.phone || '-';
-    currentEmail.textContent = parsedData.email || '-';
-    currentAdress.textContent = parsedData.direccion || '-';
-    currentDiscount.textContent = parsedData.descuento || '-';
-    currentSerial.textContent = parsedData.serialNumber || data.serialNumber || '-';
-    currentTimestamp.textContent = new Date(parsedData.timestamp || data.timestamp).toLocaleString() || '-';
-    document.getElementById('currentclasificacion').textContent = parsedData.clasificacion || '-';
-    document.getElementById('currentPuntos').textContent = parsedData.puntos || '-';
-    document.getElementById('currentvisitas').textContent = parsedData.visitas || '-';
-    document.getElementById('currentnumerocliente').textContent = parsedData.numerocliente || '-';
-}
 
         updateStatus('Cliente encontrado. Acerque el chip para grabar cliente', false);
 
@@ -555,7 +533,7 @@ updateStatus('Acerca el chip NFC al dispositivo...');
                 const clientData = await response.json(); // Obtenemos la respuesta
                 updateInfoBlock({text: clientData}); // Actualizamos con los datos nuevos
     
-                    updateStatus(Datos actualizados correctamente, false);
+                    updateStatus(`Datos actualizados correctamente`, false);
                     if ('vibrate' in navigator) {
                         navigator.vibrate(200);
                     }
@@ -587,7 +565,7 @@ scanButton.addEventListener('click', startNFCScan);
 checkNFCAvailability();
 </script>
     <a href="https://sites.google.com/view/hdcopy3d/inicio" class="signature" target="_blank">
-    Diseñado por NeuroFay
+    Diseñado por NeuroFay IA
 </a>
 </body>
 </html>
