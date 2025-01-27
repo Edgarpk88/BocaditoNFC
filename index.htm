@@ -239,7 +239,7 @@
             </div>
         </div>
     </div>
- <script>
+<script>
 // Obtener referencias a los elementos del DOM
 const statusElement = document.getElementById('status');
 const scanButton = document.getElementById('scanButton');
@@ -555,7 +555,7 @@ updateStatus('Acerca el chip NFC al dispositivo...');
                 const clientData = await response.json(); // Obtenemos la respuesta
                 updateInfoBlock({text: clientData}); // Actualizamos con los datos nuevos
     
-                    updateStatus(`Datos actualizados correctamente`, false);
+                    updateStatus(Datos actualizados correctamente, false);
                     if ('vibrate' in navigator) {
                         navigator.vibrate(200);
                     }
