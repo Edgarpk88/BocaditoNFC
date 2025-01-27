@@ -283,8 +283,8 @@ function updateInfoBlock(data) {
     currentEmail.textContent = parsedData.email || '-';
     currentAdress.textContent = parsedData.direccion || '-';
     currentDiscount.textContent = parsedData.descuento || '-';
-    currentSerial.textContent = data.serialNumber || '-';
-    currentTimestamp.textContent = new Date(data.timestamp).toLocaleString() || '-';
+    currentSerial.textContent = parsedData.serialNumber || data.serialNumber || '-';
+    currentTimestamp.textContent = new Date(parsedData.timestamp || data.timestamp).toLocaleString() || '-';
     document.getElementById('currentclasificacion').textContent = parsedData.clasificacion || '-';
     document.getElementById('currentPuntos').textContent = parsedData.puntos || '-';
     document.getElementById('currentvisitas').textContent = parsedData.visitas || '-';
@@ -318,9 +318,9 @@ buscarOkButton.addEventListener('click', async () => {
     const email = buscarEmailInput.value.trim();
 
     if (!name && !phone && !email) {
-    updateStatus('Por favor, completa al menos un campo de búsqueda', true);
-    return;
-}
+        updateStatus('Por favor, completa al menos un campo de búsqueda', true);
+        return;
+    }
 
     const searchData = {
         name: name,
@@ -335,23 +335,30 @@ buscarOkButton.addEventListener('click', async () => {
         const url = new URL('https://n8n-n8n.dlyqti.easypanel.host/webhook/fab43c1a-ef5d-43d8-ae52-3e2d891496dd');
         url.searchParams.append('text', 'buscarCLIENTE ' + JSON.stringify(searchData));
         url.searchParams.append('timestamp', timestamp);
-         url.searchParams.append('serialNumber', '');
+        url.searchParams.append('serialNumber', '');
         url.searchParams.append('action', 'buscarCliente');
 
         const response = await fetch(url, {
             method: 'GET',
         });
 
-       const clientData = await response.json();
-// Extraer y parsear los datos del objeto anidado
-const parsedClientData = JSON.parse(clientData[0].output);
+        const clientData = await response.json();
+        let parsedClientData;
 
-// Actualizar la información en el bloque de información
-updateInfoBlock({
-    text: parsedClientData,
-    serialNumber: parsedClientData.serialNumber || '-',
-    timestamp: parsedClientData.timestamp
-});
+        if (Array.isArray(clientData) && clientData[0]?.output) {
+            // Si viene en el formato array con output
+            parsedClientData = JSON.parse(clientData[0].output);
+        } else {
+            // Si viene directamente como objeto
+            parsedClientData = clientData;
+        }
+
+        // Actualizar la información en el bloque de información
+        updateInfoBlock({
+            text: parsedClientData,
+            serialNumber: parsedClientData.serialNumber || '-',
+            timestamp: parsedClientData.timestamp
+        });
 
         updateStatus('Cliente encontrado. Acerque el chip para grabar cliente', false);
 
@@ -361,13 +368,13 @@ updateInfoBlock({
 
         ndef.addEventListener("reading", async () => {
             try {
-               const dataToWrite = {
-    name: parsedClientData.name,
-    phone: parsedClientData.phone,
-    email: parsedClientData.email,
-    direccion: parsedClientData.direccion,
-    descuento: parsedClientData.descuento
-};
+                const dataToWrite = {
+                    name: parsedClientData.name,
+                    phone: parsedClientData.phone,
+                    email: parsedClientData.email,
+                    direccion: parsedClientData.direccion,
+                    descuento: parsedClientData.descuento
+                };
 
                 await ndef.write({
                     records: [{
@@ -401,6 +408,7 @@ updateInfoBlock({
         updateStatus('Error al buscar el cliente', true);
     }
 });
+
 
 // Función para el botón registrar
 registerButton.addEventListener('click', () => {
