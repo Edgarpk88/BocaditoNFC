@@ -338,13 +338,20 @@ buscarOkButton.addEventListener('click', async () => {
         url.searchParams.append('serialNumber', '');
         url.searchParams.append('action', 'buscarCliente');
 
-        const response = await fetch(url, {
-            method: 'GET',
-        });
+const response = await fetch(url, {
+    method: 'GET',
+});
 
-       const clientData = await response.json();
-// Extraer y parsear los datos del objeto anidado
-const parsedClientData = JSON.parse(clientData[0].output);
+const clientData = await response.json();
+let parsedClientData;
+
+if (Array.isArray(clientData) && clientData[0]?.output) {
+    // Si viene en el formato array con output
+    parsedClientData = JSON.parse(clientData[0].output);
+} else {
+    // Si viene directamente como objeto
+    parsedClientData = clientData;
+}
 
 // Actualizar la información en el bloque de información
 updateInfoBlock({
@@ -352,6 +359,21 @@ updateInfoBlock({
     serialNumber: parsedClientData.serialNumber || '-',
     timestamp: parsedClientData.timestamp
 });
+        // Y asegurarnos que la función updateInfoBlock maneje correctamente los datos:
+function updateInfoBlock(data) {
+    const parsedData = typeof data.text === 'string' ? JSON.parse(data.text) : data.text;
+    currentName.textContent = parsedData.name || '-';
+    currentPhone.textContent = parsedData.phone || '-';
+    currentEmail.textContent = parsedData.email || '-';
+    currentAdress.textContent = parsedData.direccion || '-';
+    currentDiscount.textContent = parsedData.descuento || '-';
+    currentSerial.textContent = parsedData.serialNumber || data.serialNumber || '-';
+    currentTimestamp.textContent = new Date(parsedData.timestamp || data.timestamp).toLocaleString() || '-';
+    document.getElementById('currentclasificacion').textContent = parsedData.clasificacion || '-';
+    document.getElementById('currentPuntos').textContent = parsedData.puntos || '-';
+    document.getElementById('currentvisitas').textContent = parsedData.visitas || '-';
+    document.getElementById('currentnumerocliente').textContent = parsedData.numerocliente || '-';
+}
 
         updateStatus('Cliente encontrado. Acerque el chip para grabar cliente', false);
 
