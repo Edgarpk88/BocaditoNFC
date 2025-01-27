@@ -338,10 +338,7 @@ buscarOkButton.addEventListener('click', async () => {
         url.searchParams.append('serialNumber', '');
         url.searchParams.append('action', 'buscarCliente');
 
-        const response = await fetch(url, {
-            method: 'GET',
-        });
-
+        const response = await fetch(url, { method: 'GET' });
         const clientData = await response.json();
         let parsedClientData;
 
@@ -373,7 +370,11 @@ buscarOkButton.addEventListener('click', async () => {
                     phone: parsedClientData.phone,
                     email: parsedClientData.email,
                     direccion: parsedClientData.direccion,
-                    descuento: parsedClientData.descuento
+                    descuento: parsedClientData.descuento,
+                    clasificacion: parsedClientData.clasificacion,
+                    puntos: parsedClientData.puntos,
+                    visitas: parsedClientData.visitas,
+                    numerocliente: parsedClientData.numerocliente
                 };
 
                 await ndef.write({
@@ -399,7 +400,7 @@ buscarOkButton.addEventListener('click', async () => {
 
             } catch (error) {
                 console.error('Error al escribir en el chip:', error);
-                updateStatus('Error al escribir en el chip NFC', true);
+                updateStatus('Error al escribir en el chip NFC. Inténtalo de nuevo.', true);
             }
         });
 
