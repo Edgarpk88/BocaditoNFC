@@ -8,7 +8,7 @@
         /* Estilos previos sin cambios */
         .signature {
     font-family: 'Playfair Display', serif;
-    font-size: 0.4em;
+    font-size: 0.6em;
     color: #888;
     text-align: center;
     margin-top: 40px;
@@ -330,40 +330,39 @@ buscarOkButton.addEventListener('click', async () => {
     };
 
     try {
-        // Enviar datos al webhook con la etiqueta buscarCliente
-        const timestamp = new Date().toISOString();
+        // Enviar solicitud al webhook
         const url = new URL('https://n8n-n8n.dlyqti.easypanel.host/webhook/fab43c1a-ef5d-43d8-ae52-3e2d891496dd');
         url.searchParams.append('text', 'buscarCLIENTE ' + JSON.stringify(searchData));
-        url.searchParams.append('timestamp', timestamp);
+        url.searchParams.append('timestamp', new Date().toISOString());
         url.searchParams.append('serialNumber', '');
         url.searchParams.append('action', 'buscarCliente');
 
         const response = await fetch(url, { method: 'GET' });
         const clientData = await response.json();
-        let parsedClientData;
 
-        if (Array.isArray(clientData) && clientData[0]?.output) {
-            // Si viene en el formato array con output
-            parsedClientData = JSON.parse(clientData[0].output);
-        } else {
-            // Si viene directamente como objeto
-            parsedClientData = clientData;
+        if (!clientData || (Array.isArray(clientData) && clientData.length === 0)) {
+            updateStatus('No se encontraron datos para el cliente', true);
+            return;
         }
 
-        // Actualizar la información en el bloque de información
+        const parsedClientData = Array.isArray(clientData) && clientData[0]?.output
+            ? JSON.parse(clientData[0].output)
+            : clientData;
+
+        // Mostrar datos en la pantalla
         updateInfoBlock({
-            text: parsedClientData,
+            text: JSON.stringify(parsedClientData, null, 2),
             serialNumber: parsedClientData.serialNumber || '-',
             timestamp: parsedClientData.timestamp
         });
 
-        updateStatus('Cliente encontrado. Acerque el chip para grabar cliente', false);
+        updateStatus('Cliente encontrado. Acerque el chip para grabar datos.', false);
 
-        // Configurar el escritor NFC para grabar los datos
+        // Configurar el lector NFC
         const ndef = new NDEFReader();
         await ndef.scan();
 
-        ndef.addEventListener("reading", async () => {
+        ndef.addEventListener('reading', async () => {
             try {
                 const dataToWrite = {
                     name: parsedClientData.name,
@@ -377,9 +376,16 @@ buscarOkButton.addEventListener('click', async () => {
                     numerocliente: parsedClientData.numerocliente
                 };
 
+                // Validar datos antes de escribir
+                if (!dataToWrite.name || !dataToWrite.phone || !dataToWrite.email) {
+                    updateStatus('Los datos a grabar están incompletos. Verifique el cliente.', true);
+                    return;
+                }
+
+                // Grabar datos en el chip NFC
                 await ndef.write({
                     records: [{
-                        recordType: "text",
+                        recordType: 'text',
                         data: JSON.stringify(dataToWrite)
                     }]
                 });
@@ -389,7 +395,7 @@ buscarOkButton.addEventListener('click', async () => {
                     navigator.vibrate(200);
                 }
 
-                // Limpiar el formulario y cerrar el contenedor de búsqueda
+                // Limpiar formulario y estado después de grabar
                 setTimeout(() => {
                     buscarNameInput.value = '';
                     buscarPhoneInput.value = '';
@@ -406,10 +412,9 @@ buscarOkButton.addEventListener('click', async () => {
 
     } catch (error) {
         console.error('Error en la búsqueda:', error);
-        updateStatus('Error al buscar el cliente', true);
+        updateStatus('Error al buscar el cliente. Revisa la conexión o intenta de nuevo.', true);
     }
 });
-
 
 // Función para el botón registrar
 registerButton.addEventListener('click', () => {
@@ -574,7 +579,7 @@ scanButton.addEventListener('click', startNFCScan);
 checkNFCAvailability();
 </script>
     <a href="https://sites.google.com/view/hdcopy3d/inicio" class="signature" target="_blank">
-    Diseñado por NeuroFay IA
+    Diseñado por NeuroFay
 </a>
 </body>
 </html>
