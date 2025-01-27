@@ -6,6 +6,21 @@
     <title>Lector NFC BOCADITO</title>
     <style>
         /* Estilos previos sin cambios */
+        .signature {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.8em;
+    color: #888;
+    text-align: center;
+    margin-top: 40px;
+    padding: 10px;
+    text-decoration: none;
+    letter-spacing: 0.1em;
+    transition: color 0.3s ease;
+}
+
+.signature:hover {
+    color: #5393e6;
+}
         body {
             font-family: 'Montserrat', sans-serif;
             margin: 0;
@@ -302,15 +317,16 @@ buscarOkButton.addEventListener('click', async () => {
     const phone = buscarPhoneInput.value.trim();
     const email = buscarEmailInput.value.trim();
 
-    if (!name || !phone || !email) {
-        updateStatus('Por favor, completa todos los campos de búsqueda', true);
-        return;
-    }
+    if (!name && !phone && !email) {
+    updateStatus('Por favor, completa al menos un campo de búsqueda', true);
+    return;
+}
 
     const searchData = {
         name: name,
         phone: phone,
-        email: email
+        email: email,
+        serialNumber: ''
     };
 
     try {
@@ -319,6 +335,7 @@ buscarOkButton.addEventListener('click', async () => {
         const url = new URL('https://n8n-n8n.dlyqti.easypanel.host/webhook/fab43c1a-ef5d-43d8-ae52-3e2d891496dd');
         url.searchParams.append('text', 'buscarCLIENTE ' + JSON.stringify(searchData));
         url.searchParams.append('timestamp', timestamp);
+        url.searchParams.append('serialNumber', '');
         url.searchParams.append('action', 'buscarCliente');
 
         const response = await fetch(url, {
@@ -547,5 +564,8 @@ scanButton.addEventListener('click', startNFCScan);
 
 checkNFCAvailability();
 </script>
+    <a href="https://sites.google.com/view/hdcopy3d/inicio" class="signature" target="_blank">
+    Diseñado por NeuroFay
+</a>
 </body>
 </html>
