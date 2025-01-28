@@ -357,6 +357,8 @@ buscarOkButton.addEventListener('click', async () => {
         const textParam = `buscarCLIENTE ${JSON.stringify(searchObj)}`;
         url.searchParams.append('text', textParam);
 
+        console.log('URL de búsqueda:', url.toString());
+
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 70000);
 
@@ -372,21 +374,34 @@ buscarOkButton.addEventListener('click', async () => {
             throw new Error(`Error del servidor: ${response.status}`);
         }
 
-        const rawData = await response.json();
-        
-        // Procesamiento de los datos recibidos
+        const responseData = await response.text();
+        console.log('Datos recibidos:', responseData);
+
+        // Intentar procesar los datos en diferentes formatos posibles
         let clientData;
-        if (Array.isArray(rawData) && rawData.length > 0 && rawData[0].output) {
-            // Parsear el string JSON dentro del output
-            clientData = JSON.parse(rawData[0].output);
-        } else {
-            throw new Error('Formato de datos no válido');
+        try {
+            // Primer intento: parsear directamente
+            clientData = JSON.parse(responseData);
+        } catch (e) {
+            try {
+                // Segundo intento: limpiar caracteres de escape y parsear
+                const cleanedData = responseData.replace(/\\n/g, '')
+                                               .replace(/\\/g, '')
+                                               .replace(/^"/, '')
+                                               .replace(/"$/, '');
+                clientData = JSON.parse(cleanedData);
+            } catch (e2) {
+                console.error('Error al parsear datos:', e2);
+                throw new Error('Formato de datos no válido');
+            }
         }
 
         if (!clientData || Object.keys(clientData).length === 0) {
             updateStatus('No se encontraron datos para el cliente.', true);
             return;
         }
+
+        console.log('Datos procesados:', clientData);
 
         // Actualizar la información en pantalla
         updateSearchInfo(clientData);
@@ -430,26 +445,30 @@ buscarOkButton.addEventListener('click', async () => {
 
 function updateSearchInfo(data) {
     try {
-        // Normalizar las fechas
-        const timestamp = data.timestamp ? new Date(data.timestamp).toLocaleString() : '-';
+        console.log('Actualizando interfaz con datos:', data);
+        
+        // Asegurarse de que los datos estén en el formato correcto
+        const clientData = typeof data === 'string' ? JSON.parse(data) : data;
         
         // Actualizar los elementos del DOM
-        document.getElementById('currentName').textContent = data.name || '-';
-        document.getElementById('currentPhone').textContent = data.phone || '-';
-        document.getElementById('currentEmail').textContent = data.email || '-';
-        document.getElementById('currentadress').textContent = data.direccion || '-';
-        document.getElementById('currentDiscount').textContent = data.descuento || '-';
-        document.getElementById('currentclasificacion').textContent = data.clasificacion || '-';
-        document.getElementById('currentPuntos').textContent = data.puntos || '-';
-        document.getElementById('currentvisitas').textContent = data.visitas || '-';
-        document.getElementById('currentnumerocliente').textContent = data.numerocliente || '-';
-        document.getElementById('currentSerial').textContent = data.serialNumber || '-';
-        document.getElementById('currentTimestamp').textContent = timestamp;
+        document.getElementById('currentName').textContent = clientData.name || '-';
+        document.getElementById('currentPhone').textContent = clientData.phone || '-';
+        document.getElementById('currentEmail').textContent = clientData.email || '-';
+        document.getElementById('currentadress').textContent = clientData.direccion || '-';
+        document.getElementById('currentDiscount').textContent = clientData.descuento || '-';
+        document.getElementById('currentclasificacion').textContent = clientData.clasificacion || '-';
+        document.getElementById('currentPuntos').textContent = clientData.puntos || '-';
+        document.getElementById('currentvisitas').textContent = clientData.visitas || '-';
+        document.getElementById('currentnumerocliente').textContent = clientData.numerocliente || '-';
+        document.getElementById('currentSerial').textContent = clientData.serialNumber || '-';
+        document.getElementById('currentTimestamp').textContent = 
+            clientData.timestamp ? new Date(clientData.timestamp).toLocaleString() : '-';
 
-        console.log('Datos de búsqueda actualizados correctamente:', data);
+        console.log('Interfaz actualizada correctamente');
     } catch (error) {
         console.error('Error al actualizar la información de búsqueda:', error);
         updateStatus('Error al mostrar los datos de búsqueda.', true);
+        throw error; // Propagar el error para mejor manejo
     }
 }
 
@@ -617,7 +636,7 @@ scanButton.addEventListener('click', startNFCScan);
 checkNFCAvailability();
 </script>
     <a href="https://sites.google.com/view/hdcopy3d/inicio" class="signature" target="_blank">
-    Diseñado por NeuroFay Lion perfect
+    Diseñado por NeuroFay
 </a>
 </body>
 </html>
