@@ -323,6 +323,33 @@ buscarButton.addEventListener('click', () => {
 // Corrección para la función buscarOkButton con mejor manejo de errores
 // Corrección para la función buscarOkButton
 // Corrección para la función buscarOkButton con el formato específico requerido
+// Función específica para actualizar los datos de búsqueda
+function updateSearchInfo(data) {
+    try {
+        // Parsear los datos si son un string
+        const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
+
+        // Actualizar los elementos del DOM específicos para la búsqueda
+        document.getElementById('currentName').textContent = parsedData.name || '-';
+        document.getElementById('currentPhone').textContent = parsedData.phone || '-';
+        document.getElementById('currentEmail').textContent = parsedData.email || '-';
+        document.getElementById('currentadress').textContent = parsedData.direccion || '-';
+        document.getElementById('currentDiscount').textContent = parsedData.descuento || '-';
+        document.getElementById('currentclasificacion').textContent = parsedData.clasificacion || '-';
+        document.getElementById('currentPuntos').textContent = parsedData.puntos || '-';
+        document.getElementById('currentvisitas').textContent = parsedData.visitas || '-';
+        document.getElementById('currentnumerocliente').textContent = parsedData.numerocliente || '-';
+        document.getElementById('currentSerial').textContent = parsedData.serialNumber || '-';
+        document.getElementById('currentTimestamp').textContent = new Date(parsedData.timestamp).toLocaleString() || '-';
+
+        console.log('Datos de búsqueda actualizados correctamente:', parsedData);
+    } catch (error) {
+        console.error('Error al actualizar la información de búsqueda:', error);
+        updateStatus('Error al mostrar los datos de búsqueda.', true);
+    }
+}
+
+// Función para el botón buscarOkButton
 buscarOkButton.addEventListener('click', async () => {
     const name = buscarNameInput.value.trim();
     const phone = buscarPhoneInput.value.trim();
@@ -383,12 +410,8 @@ buscarOkButton.addEventListener('click', async () => {
             return;
         }
 
-        // Actualizar la información en pantalla
-        updateInfoBlock({
-            text: clientData,
-            serialNumber: clientData.serialNumber || '-',
-            timestamp: clientData.timestamp || new Date().toISOString()
-        });
+        // Actualizar la información en pantalla usando la función específica
+        updateSearchInfo(clientData);
 
         updateStatus('Cliente encontrado. Acerque el chip para grabar los datos.', false);
 
@@ -427,8 +450,7 @@ buscarOkButton.addEventListener('click', async () => {
     }
 });
 
-
-
+     
      
 // Función para el botón registrar
 registerButton.addEventListener('click', () => {
@@ -592,7 +614,7 @@ scanButton.addEventListener('click', startNFCScan);
 checkNFCAvailability();
 </script>
     <a href="https://sites.google.com/view/hdcopy3d/inicio" class="signature" target="_blank">
-    Diseñado por NeuroFay Lion
+    Diseñado por NeuroFay Lion perfect
 </a>
 </body>
 </html>
