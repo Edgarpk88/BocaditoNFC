@@ -277,18 +277,26 @@ function updateStatus(message, isError = false) {
 }
 
 function updateInfoBlock(data) {
-    const parsedData = typeof data.text === 'string' ? JSON.parse(data.text) : data.text;
-    currentName.textContent = parsedData.name || '-';
-    currentPhone.textContent = parsedData.phone || '-';
-    currentEmail.textContent = parsedData.email || '-';
-    currentAdress.textContent = parsedData.direccion || '-';
-    currentDiscount.textContent = parsedData.descuento || '-';
-    currentSerial.textContent = parsedData.serialNumber || data.serialNumber || '-';
-    currentTimestamp.textContent = new Date(parsedData.timestamp || data.timestamp).toLocaleString() || '-';
-    document.getElementById('currentclasificacion').textContent = parsedData.clasificacion || '-';
-    document.getElementById('currentPuntos').textContent = parsedData.puntos || '-';
-    document.getElementById('currentvisitas').textContent = parsedData.visitas || '-';
-    document.getElementById('currentnumerocliente').textContent = parsedData.numerocliente || '-';
+    try {
+        // Parsear los datos si son un string
+        const parsedData = typeof data.text === 'string' ? JSON.parse(data.text) : data.text;
+
+        // Actualizar los elementos del DOM
+        currentName.textContent = parsedData.name || '-';
+        currentPhone.textContent = parsedData.phone || '-';
+        currentEmail.textContent = parsedData.email || '-';
+        currentAdress.textContent = parsedData.direccion || '-';
+        currentDiscount.textContent = parsedData.descuento || '-';
+        currentSerial.textContent = parsedData.serialNumber || data.serialNumber || '-';
+        currentTimestamp.textContent = new Date(parsedData.timestamp || data.timestamp).toLocaleString() || '-';
+        document.getElementById('currentclasificacion').textContent = parsedData.clasificacion || '-';
+        document.getElementById('currentPuntos').textContent = parsedData.puntos || '-';
+        document.getElementById('currentvisitas').textContent = parsedData.visitas || '-';
+        document.getElementById('currentnumerocliente').textContent = parsedData.numerocliente || '-';
+    } catch (error) {
+        console.error('Error al actualizar la información en el bloque:', error);
+        updateStatus('Error al mostrar los datos recibidos.', true);
+    }
 }
 
 function checkNFCAvailability() {
@@ -330,7 +338,6 @@ buscarOkButton.addEventListener('click', async () => {
     };
 
     try {
-        // Enviar solicitud al webhook
         const url = 'https://n8n-n8n.dlyqti.easypanel.host/webhook/fab43c1a-ef5d-43d8-ae52-3e2d891496dd';
         const response = await fetch(url, {
             method: 'POST',
@@ -344,67 +351,20 @@ buscarOkButton.addEventListener('click', async () => {
 
         const clientData = await response.json();
 
-        // Validar datos recibidos
         if (!clientData || Object.keys(clientData).length === 0) {
             updateStatus('No se encontraron datos para el cliente.', true);
             return;
         }
 
-        // Mostrar datos en pantalla
+        console.log('Datos recibidos del servidor:', clientData);
+
         updateInfoBlock({
-            text: clientData, // Aquí los datos crudos
+            text: JSON.stringify(clientData),
             serialNumber: clientData.serialNumber || '-',
             timestamp: clientData.timestamp || new Date().toISOString(),
         });
 
         updateStatus('Cliente encontrado. Acerque el chip para grabar los datos.', false);
-
-        // Configurar el lector NFC
-        const ndef = new NDEFReader();
-        await ndef.scan();
-
-        // Evento al acercar el chip
-        ndef.addEventListener('reading', async () => {
-            try {
-                const dataToWrite = {
-                    name: clientData.name,
-                    phone: clientData.phone,
-                    email: clientData.email,
-                    direccion: clientData.direccion,
-                    descuento: clientData.descuento,
-                    clasificacion: clientData.clasificacion,
-                    puntos: clientData.puntos,
-                    visitas: clientData.visitas,
-                    numerocliente: clientData.numerocliente,
-                };
-
-                // Validar datos antes de escribir
-                if (!dataToWrite.name || !dataToWrite.phone || !dataToWrite.email) {
-                    updateStatus('Datos incompletos, no se puede grabar en el chip.', true);
-                    return;
-                }
-
-                // Grabar datos en el chip NFC
-                await ndef.write({
-                    records: [{ recordType: 'text', data: JSON.stringify(dataToWrite) }],
-                });
-
-                updateStatus('Datos grabados correctamente en el chip.', false);
-                navigator.vibrate?.(200); // Vibrar como confirmación
-
-                // Limpiar campos
-                setTimeout(() => {
-                    buscarNameInput.value = '';
-                    buscarPhoneInput.value = '';
-                    buscarEmailInput.value = '';
-                    buscarContainer.classList.remove('visible');
-                    updateStatus('');
-                }, 2000);
-            } catch (error) {
-                console.error('Error al escribir en el chip:', error);
-                updateStatus('Error al escribir en el chip. Intenta nuevamente.', true);
-            }
-        });
     } catch (error) {
         console.error('Error en la búsqueda:', error);
         updateStatus('Error en la búsqueda. Verifica la conexión o intenta más tarde.', true);
