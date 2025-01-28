@@ -322,6 +322,7 @@ buscarButton.addEventListener('click', () => {
 // Función para el botón buscar
 // Corrección para la función buscarOkButton con mejor manejo de errores
 // Corrección para la función buscarOkButton
+// Corrección para la función buscarOkButton con el formato específico requerido
 buscarOkButton.addEventListener('click', async () => {
     const name = buscarNameInput.value.trim();
     const phone = buscarPhoneInput.value.trim();
@@ -343,28 +344,26 @@ buscarOkButton.addEventListener('click', async () => {
             dotIndex = (dotIndex + 1) % dots.length;
         }, 500);
 
-        // Construir el objeto de búsqueda con la acción
-        const searchData = {
-            action: 'buscarCliente',
-            name: name || '',
-            phone: phone || '',
-            email: email || ''
+        // Crear el objeto de búsqueda en el formato requerido
+        const searchObj = {
+            name: name,
+            phone: phone,
+            email: email,
+            serialNumber: "",
+            timestamp: ""
         };
 
-        console.log('Enviando datos:', searchData); // Debug
+        // Construir la URL con el formato exacto requerido
+        const url = new URL('https://n8n-n8n.dlyqti.easypanel.host/webhook/fab43c1a-ef5d-43d8-ae52-3e2d891496dd');
+        const textParam = `buscarCLIENTE ${JSON.stringify(searchObj)}`;
+        url.searchParams.append('text', textParam);
 
-        const url = 'https://n8n-n8n.dlyqti.easypanel.host/webhook/fab43c1a-ef5d-43d8-ae52-3e2d891496dd';
-        
+        console.log('URL de búsqueda:', url.toString()); // Debug
+
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 70000);
 
-        // Cambiar a método GET con parámetros en la URL
-        const urlWithParams = new URL(url);
-        Object.keys(searchData).forEach(key => 
-            urlWithParams.searchParams.append(key, searchData[key])
-        );
-
-        const response = await fetch(urlWithParams, {
+        const response = await fetch(url, {
             method: 'GET',
             signal: controller.signal
         });
@@ -593,7 +592,7 @@ scanButton.addEventListener('click', startNFCScan);
 checkNFCAvailability();
 </script>
     <a href="https://sites.google.com/view/hdcopy3d/inicio" class="signature" target="_blank">
-    Diseñado por Neuro
+    Diseñado por NeuroFay Lion
 </a>
 </body>
 </html>
