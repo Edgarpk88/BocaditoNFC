@@ -321,7 +321,96 @@ buscarButton.addEventListener('click', () => {
 });
 // Función para el botón buscar
 
+// Función para el botón buscar
+buscarOkButton.addEventListener('click', async () => {
+    const name = buscarNameInput.value.trim();
+    const phone = buscarPhoneInput.value.trim();
+    const email = buscarEmailInput.value.trim();
 
+    // Al menos un campo debe estar lleno
+    if (!name && !phone && !email) {
+        updateStatus('Por favor, completa al menos un campo para buscar', true);
+        return;
+    }
+
+    const searchData = {
+        name: name,
+        phone: phone,
+        email: email,
+        serialNumber: "",
+        timestamp: new Date().toISOString()
+    };
+
+    try {
+        updateStatus('Buscando cliente...');
+        
+        // Enviar datos al webhook con la etiqueta buscarCLIENTE
+        const url = new URL('https://n8n-n8n.dlyqti.easypanel.host/webhook/fab43c1a-ef5d-43d8-ae52-3e2d891496dd');
+        url.searchParams.append('text', 'buscarCLIENTE ' + JSON.stringify(searchData));
+        
+        updateStatus('Esperando respuesta del servidor...');
+        
+        const response = await fetch(url, {
+            method: 'GET',
+        });
+
+        const clientData = await response.json();
+        updateStatus('Cliente encontrado ✓');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        updateInfoBlock({text: clientData});
+        
+        // Grabar datos en el chip NFC
+        updateStatus('Acerca el chip NFC para grabar los datos...');
+        const ndef = new NDEFReader();
+        await ndef.scan();
+
+        ndef.addEventListener("reading", async () => {
+            try {
+                const dataToWrite = {
+                    name: clientData.name,
+                    phone: clientData.phone,
+                    email: clientData.email,
+                    direccion: clientData.direccion,
+                    descuento: clientData.descuento
+                };
+
+                await ndef.write({
+                    records: [{
+                        recordType: "text",
+                        data: JSON.stringify(dataToWrite)
+                    }]
+                });
+
+                updateStatus('Datos grabados en el chip correctamente ✓');
+                if ('vibrate' in navigator) {
+                    navigator.vibrate(200);
+                }
+
+                setTimeout(() => {
+                    buscarNameInput.value = '';
+                    buscarPhoneInput.value = '';
+                    buscarEmailInput.value = '';
+                    buscarContainer.classList.remove('visible');
+                    updateStatus('');
+                }, 3000);
+
+            } catch (error) {
+                console.error('Error al escribir:', error);
+                updateStatus('Error al escribir en el chip NFC', true);
+            }
+        });
+
+    } catch (error) {
+        console.error('Error en la búsqueda:', error);
+        if (error.name === 'NotAllowedError') {
+            updateStatus('Activa NFC en tu dispositivo y da permiso a la web', true);
+        } else if (error.name === 'NotReadableError') {
+            updateStatus('No se pudo acceder al chip NFC', true);
+        } else {
+            updateStatus('Error al buscar el cliente', true);
+        }
+    }
+});
 
      
      
@@ -487,7 +576,7 @@ scanButton.addEventListener('click', startNFCScan);
 checkNFCAvailability();
 </script>
     <a href="https://sites.google.com/view/hdcopy3d/inicio" class="signature" target="_blank">
-    Diseñado por NeuroFay
+    Diseñado por NeuroFay nose
 </a>
 </body>
 </html>
