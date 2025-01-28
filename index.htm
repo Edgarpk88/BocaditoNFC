@@ -312,7 +312,7 @@ function checkNFCAvailability() {
     updateStatus('Tu dispositivo o navegador no soporta NFC.', true);
     return false;
 }
-// Función para el botón buscar
+// Función despliegue para el botón buscar
 buscarButton.addEventListener('click', () => {
     buscarContainer.classList.toggle('visible');
     if (registerContainer.classList.contains('visible')) {
@@ -320,135 +320,8 @@ buscarButton.addEventListener('click', () => {
     }
 });
 // Función para el botón buscar
-// Corrección para la función buscarOkButton con mejor manejo de errores
-// Corrección para la función buscarOkButton
-// Corrección para la función buscarOkButton con el formato específico requerido
-// Función específica para actualizar los datos de búsqueda
-function updateSearchInfo(data) {
-    try {
-        // Parsear los datos si son un string
-        const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
 
-        // Actualizar los elementos del DOM específicos para la búsqueda
-        document.getElementById('currentName').textContent = parsedData.name || '-';
-        document.getElementById('currentPhone').textContent = parsedData.phone || '-';
-        document.getElementById('currentEmail').textContent = parsedData.email || '-';
-        document.getElementById('currentadress').textContent = parsedData.direccion || '-';
-        document.getElementById('currentDiscount').textContent = parsedData.descuento || '-';
-        document.getElementById('currentclasificacion').textContent = parsedData.clasificacion || '-';
-        document.getElementById('currentPuntos').textContent = parsedData.puntos || '-';
-        document.getElementById('currentvisitas').textContent = parsedData.visitas || '-';
-        document.getElementById('currentnumerocliente').textContent = parsedData.numerocliente || '-';
-        document.getElementById('currentSerial').textContent = parsedData.serialNumber || '-';
-        document.getElementById('currentTimestamp').textContent = new Date(parsedData.timestamp).toLocaleString() || '-';
 
-        console.log('Datos de búsqueda actualizados correctamente:', parsedData);
-    } catch (error) {
-        console.error('Error al actualizar la información de búsqueda:', error);
-        updateStatus('Error al mostrar los datos de búsqueda.', true);
-    }
-}
-
-// Función para el botón buscarOkButton
-buscarOkButton.addEventListener('click', async () => {
-    const name = buscarNameInput.value.trim();
-    const phone = buscarPhoneInput.value.trim();
-    const email = buscarEmailInput.value.trim();
-
-    if (!name && !phone && !email) {
-        updateStatus('Por favor, completa al menos un campo de búsqueda', true);
-        return;
-    }
-
-    let loadingInterval;
-    const dots = ['', '.', '..', '...'];
-    let dotIndex = 0;
-
-    try {
-        updateStatus('Buscando cliente, por favor espere');
-        loadingInterval = setInterval(() => {
-            updateStatus(`Buscando cliente, por favor espere${dots[dotIndex]}`);
-            dotIndex = (dotIndex + 1) % dots.length;
-        }, 500);
-
-        // Crear el objeto de búsqueda en el formato requerido
-        const searchObj = {
-            name: name,
-            phone: phone,
-            email: email,
-            serialNumber: "",
-            timestamp: ""
-        };
-
-        // Construir la URL con el formato exacto requerido
-        const url = new URL('https://n8n-n8n.dlyqti.easypanel.host/webhook/fab43c1a-ef5d-43d8-ae52-3e2d891496dd');
-        const textParam = `buscarCLIENTE ${JSON.stringify(searchObj)}`;
-        url.searchParams.append('text', textParam);
-
-        console.log('URL de búsqueda:', url.toString()); // Debug
-
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 70000);
-
-        const response = await fetch(url, {
-            method: 'GET',
-            signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-        clearInterval(loadingInterval);
-
-        if (!response.ok) {
-            throw new Error(`Error del servidor: ${response.status}`);
-        }
-
-        const clientData = await response.json();
-        console.log('Respuesta del servidor:', clientData); // Debug
-
-        if (!clientData || Object.keys(clientData).length === 0) {
-            updateStatus('No se encontraron datos para el cliente.', true);
-            return;
-        }
-
-        // Actualizar la información en pantalla usando la función específica
-        updateSearchInfo(clientData);
-
-        updateStatus('Cliente encontrado. Acerque el chip para grabar los datos.', false);
-
-        // Iniciar escritura NFC
-        try {
-            const ndef = new NDEFReader();
-            await ndef.scan();
-
-            ndef.addEventListener("reading", async () => {
-                try {
-                    await ndef.write({
-                        records: [{
-                            recordType: "text",
-                            data: JSON.stringify(clientData)
-                        }]
-                    });
-                    updateStatus('Datos grabados en el chip correctamente ✓', false);
-                } catch (error) {
-                    console.error('Error al escribir en NFC:', error);
-                    updateStatus('Error al escribir en el chip NFC', true);
-                }
-            });
-        } catch (error) {
-            console.error('Error al iniciar NFC:', error);
-            updateStatus('Error al iniciar NFC. Verifique que NFC está activado.', true);
-        }
-
-    } catch (error) {
-        clearInterval(loadingInterval);
-        console.error('Error en la búsqueda:', error);
-        if (error.name === 'AbortError') {
-            updateStatus('La búsqueda está tardando demasiado. Por favor, inténtelo de nuevo.', true);
-        } else {
-            updateStatus('Error de conexión con el servidor. Por favor, inténtelo de nuevo.', true);
-        }
-    }
-});
 
      
      
