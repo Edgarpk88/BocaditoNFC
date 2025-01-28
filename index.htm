@@ -331,88 +331,83 @@ buscarOkButton.addEventListener('click', async () => {
 
     try {
         // Enviar solicitud al webhook
-        const url = new URL('https://n8n-n8n.dlyqti.easypanel.host/webhook/fab43c1a-ef5d-43d8-ae52-3e2d891496dd');
-        url.searchParams.append('text', 'buscarCLIENTE ' + JSON.stringify(searchData));
-        url.searchParams.append('timestamp', new Date().toISOString());
-        url.searchParams.append('serialNumber', '');
-        url.searchParams.append('action', 'buscarCliente');
+        const url = 'https://n8n-n8n.dlyqti.easypanel.host/webhook/fab43c1a-ef5d-43d8-ae52-3e2d891496dd';
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(searchData),
+        });
 
-        const response = await fetch(url, { method: 'GET' });
+        if (!response.ok) {
+            throw new Error('Error en el servidor al buscar el cliente.');
+        }
+
         const clientData = await response.json();
 
-        if (!clientData || (Array.isArray(clientData) && clientData.length === 0)) {
-            updateStatus('No se encontraron datos para el cliente', true);
+        // Validar datos recibidos
+        if (!clientData || Object.keys(clientData).length === 0) {
+            updateStatus('No se encontraron datos para el cliente.', true);
             return;
         }
 
-        const parsedClientData = Array.isArray(clientData) && clientData[0]?.output
-            ? JSON.parse(clientData[0].output)
-            : clientData;
-
-        // Mostrar datos en la pantalla
+        // Mostrar datos en pantalla
         updateInfoBlock({
-            text: JSON.stringify(parsedClientData, null, 2),
-            serialNumber: parsedClientData.serialNumber || '-',
-            timestamp: parsedClientData.timestamp
+            text: clientData, // Aquí los datos crudos
+            serialNumber: clientData.serialNumber || '-',
+            timestamp: clientData.timestamp || new Date().toISOString(),
         });
 
-        updateStatus('Cliente encontrado. Acerque el chip para grabar datos.', false);
+        updateStatus('Cliente encontrado. Acerque el chip para grabar los datos.', false);
 
         // Configurar el lector NFC
         const ndef = new NDEFReader();
         await ndef.scan();
 
+        // Evento al acercar el chip
         ndef.addEventListener('reading', async () => {
             try {
                 const dataToWrite = {
-                    name: parsedClientData.name,
-                    phone: parsedClientData.phone,
-                    email: parsedClientData.email,
-                    direccion: parsedClientData.direccion,
-                    descuento: parsedClientData.descuento,
-                    clasificacion: parsedClientData.clasificacion,
-                    puntos: parsedClientData.puntos,
-                    visitas: parsedClientData.visitas,
-                    numerocliente: parsedClientData.numerocliente
+                    name: clientData.name,
+                    phone: clientData.phone,
+                    email: clientData.email,
+                    direccion: clientData.direccion,
+                    descuento: clientData.descuento,
+                    clasificacion: clientData.clasificacion,
+                    puntos: clientData.puntos,
+                    visitas: clientData.visitas,
+                    numerocliente: clientData.numerocliente,
                 };
 
                 // Validar datos antes de escribir
                 if (!dataToWrite.name || !dataToWrite.phone || !dataToWrite.email) {
-                    updateStatus('Los datos a grabar están incompletos. Verifique el cliente.', true);
+                    updateStatus('Datos incompletos, no se puede grabar en el chip.', true);
                     return;
                 }
 
                 // Grabar datos en el chip NFC
                 await ndef.write({
-                    records: [{
-                        recordType: 'text',
-                        data: JSON.stringify(dataToWrite)
-                    }]
+                    records: [{ recordType: 'text', data: JSON.stringify(dataToWrite) }],
                 });
 
-                updateStatus('Datos grabados correctamente en el chip ✓');
-                if ('vibrate' in navigator) {
-                    navigator.vibrate(200);
-                }
+                updateStatus('Datos grabados correctamente en el chip.', false);
+                navigator.vibrate?.(200); // Vibrar como confirmación
 
-                // Limpiar formulario y estado después de grabar
+                // Limpiar campos
                 setTimeout(() => {
                     buscarNameInput.value = '';
                     buscarPhoneInput.value = '';
                     buscarEmailInput.value = '';
                     buscarContainer.classList.remove('visible');
                     updateStatus('');
-                }, 3000);
-
+                }, 2000);
             } catch (error) {
                 console.error('Error al escribir en el chip:', error);
-                updateStatus('Error al escribir en el chip NFC. Inténtalo de nuevo.', true);
+                updateStatus('Error al escribir en el chip. Intenta nuevamente.', true);
             }
         });
-
     } catch (error) {
         console.error('Error en la búsqueda:', error);
-        updateStatus('Error al buscar el cliente. Revisa la conexión o intenta de nuevo.', true);
+        updateStatus('Error en la búsqueda. Verifica la conexión o intenta más tarde.', true);
     }
 });
 
