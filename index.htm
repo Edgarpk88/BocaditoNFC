@@ -357,8 +357,6 @@ buscarOkButton.addEventListener('click', async () => {
         const textParam = `buscarCLIENTE ${JSON.stringify(searchObj)}`;
         url.searchParams.append('text', textParam);
 
-        console.log('URL de búsqueda:', url.toString());
-
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 70000);
 
@@ -374,37 +372,38 @@ buscarOkButton.addEventListener('click', async () => {
             throw new Error(`Error del servidor: ${response.status}`);
         }
 
-        const responseData = await response.text();
-        console.log('Datos recibidos:', responseData);
+        // Obtener los datos y procesarlos
+        const responseData = await response.json();
+        console.log('Respuesta del servidor:', responseData);
 
-        // Intentar procesar los datos en diferentes formatos posibles
-        let clientData;
-        try {
-            // Primer intento: parsear directamente
-            clientData = JSON.parse(responseData);
-        } catch (e) {
-            try {
-                // Segundo intento: limpiar caracteres de escape y parsear
-                const cleanedData = responseData.replace(/\\n/g, '')
-                                               .replace(/\\/g, '')
-                                               .replace(/^"/, '')
-                                               .replace(/"$/, '');
-                clientData = JSON.parse(cleanedData);
-            } catch (e2) {
-                console.error('Error al parsear datos:', e2);
-                throw new Error('Formato de datos no válido');
+        // Extraer los datos de las partes numeradas
+        const clientData = {};
+        for (let i = 1; i <= Object.keys(responseData.$json).length; i++) {
+            const part = responseData.$json[`part${i}`];
+            if (part) {
+                Object.assign(clientData, part);
             }
-        }
-
-        if (!clientData || Object.keys(clientData).length === 0) {
-            updateStatus('No se encontraron datos para el cliente.', true);
-            return;
         }
 
         console.log('Datos procesados:', clientData);
 
-        // Actualizar la información en pantalla
-        updateSearchInfo(clientData);
+        if (!clientData || Object.keys(clientData).length === 0) {
+            throw new Error('No se encontraron datos del cliente');
+        }
+
+        // Actualizar la interfaz con los datos
+        document.getElementById('currentName').textContent = clientData.name || '-';
+        document.getElementById('currentPhone').textContent = clientData.phone || '-';
+        document.getElementById('currentEmail').textContent = clientData.email || '-';
+        document.getElementById('currentadress').textContent = clientData.direccion || '-';
+        document.getElementById('currentDiscount').textContent = clientData.descuento || '-';
+        document.getElementById('currentclasificacion').textContent = clientData.clasificacion || '-';
+        document.getElementById('currentPuntos').textContent = clientData.puntos || '-';
+        document.getElementById('currentvisitas').textContent = clientData.visitas || '-';
+        document.getElementById('currentnumerocliente').textContent = clientData.numerocliente || '-';
+        document.getElementById('currentSerial').textContent = clientData.serialNumber || '-';
+        document.getElementById('currentTimestamp').textContent = 
+            clientData.timestamp ? new Date(clientData.timestamp).toLocaleString() : '-';
 
         updateStatus('Cliente encontrado. Acerque el chip para grabar los datos.', false);
 
@@ -636,7 +635,7 @@ scanButton.addEventListener('click', startNFCScan);
 checkNFCAvailability();
 </script>
     <a href="https://sites.google.com/view/hdcopy3d/inicio" class="signature" target="_blank">
-    Diseñado por NeuroFay
+    Diseñado por NeuroFay 1000
 </a>
 </body>
 </html>
