@@ -278,23 +278,24 @@ function updateStatus(message, isError = false) {
 
 function updateInfoBlock(data) {
     try {
-        // Parsear los datos si son un string
-        const parsedData = typeof data.text === 'string' ? JSON.parse(data.text) : data.text;
+        // Verificar si los datos están en el formato esperado
+        const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
 
-        // Actualizar los elementos del DOM
-        currentName.textContent = parsedData.name || '-';
-        currentPhone.textContent = parsedData.phone || '-';
-        currentEmail.textContent = parsedData.email || '-';
-        currentAdress.textContent = parsedData.direccion || '-';
-        currentDiscount.textContent = parsedData.descuento || '-';
-        currentSerial.textContent = parsedData.serialNumber || data.serialNumber || '-';
-        currentTimestamp.textContent = new Date(parsedData.timestamp || data.timestamp).toLocaleString() || '-';
-        document.getElementById('currentclasificacion').textContent = parsedData.clasificacion || '-';
-        document.getElementById('currentPuntos').textContent = parsedData.puntos || '-';
-        document.getElementById('currentvisitas').textContent = parsedData.visitas || '-';
-        document.getElementById('currentnumerocliente').textContent = parsedData.numerocliente || '-';
+        // Actualizar únicamente los elementos del panel de lectura
+        if (parsedData.name) currentName.textContent = parsedData.name;
+        if (parsedData.phone) currentPhone.textContent = parsedData.phone;
+        if (parsedData.email) currentEmail.textContent = parsedData.email;
+        if (parsedData.direccion) currentAdress.textContent = parsedData.direccion;
+        if (parsedData.descuento) currentDiscount.textContent = parsedData.descuento;
+        if (parsedData.serialNumber) currentSerial.textContent = parsedData.serialNumber;
+        if (parsedData.timestamp) currentTimestamp.textContent = new Date(parsedData.timestamp).toLocaleString();
+        if (parsedData.clasificacion) document.getElementById('currentclasificacion').textContent = parsedData.clasificacion;
+        if (parsedData.puntos) document.getElementById('currentPuntos').textContent = parsedData.puntos;
+        if (parsedData.visitas) document.getElementById('currentvisitas').textContent = parsedData.visitas;
+        if (parsedData.numerocliente) document.getElementById('currentnumerocliente').textContent = parsedData.numerocliente;
+
     } catch (error) {
-        console.error('Error al actualizar la información en el bloque:', error);
+        console.error('Error al actualizar la información en el panel:', error);
         updateStatus('Error al mostrar los datos recibidos.', true);
     }
 }
@@ -334,122 +335,45 @@ buscarOkButton.addEventListener('click', async () => {
         return;
     }
 
-    let loadingInterval;
-    const dots = ['', '.', '..', '...'];
-    let dotIndex = 0;
+    updateStatus('Buscando cliente, por favor espere...');
 
     try {
-        updateStatus('Buscando cliente, por favor espere');
-        loadingInterval = setInterval(() => {
-            updateStatus(`Buscando cliente, por favor espere${dots[dotIndex]}`);
-            dotIndex = (dotIndex + 1) % dots.length;
-        }, 500);
-
+        // Construir la URL con los parámetros
         const searchObj = {
             name: name,
             phone: phone,
             email: email,
-            serialNumber: "",
-            timestamp: ""
         };
 
         const url = new URL('https://n8n-n8n.dlyqti.easypanel.host/webhook/fab43c1a-ef5d-43d8-ae52-3e2d891496dd');
-        const textParam = `buscarCLIENTE ${JSON.stringify(searchObj)}`;
-        url.searchParams.append('text', textParam);
+        url.searchParams.append('text', `buscarCLIENTE ${JSON.stringify(searchObj)}`);
 
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 70000);
-
-        const response = await fetch(url, {
-            method: 'GET',
-            signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-        clearInterval(loadingInterval);
+        // Realizar la solicitud al webhook
+        const response = await fetch(url);
 
         if (!response.ok) {
             throw new Error(`Error del servidor: ${response.status}`);
         }
 
-        // Obtener los datos como texto y procesarlos
         const responseText = await response.text();
         console.log('Respuesta cruda:', responseText);
 
-        // Procesar la respuesta específica de n8n
-        let clientData = null;
-        
-        // Extraer el JSON del string usando una expresión regular
+        // Extraer el JSON del texto usando expresión regular
         const jsonMatch = responseText.match(/\{[^]*\}/);
-        if (jsonMatch) {
-            const jsonStr = jsonMatch[0]
-                .replace(/\\n\s*/g, '') // Eliminar \n y espacios
-                .replace(/\\"/g, '"')   // Reemplazar \" por "
-                .replace(/"\{/g, '{')   // Eliminar comillas extra al inicio
-                .replace(/\}"/g, '}');  // Eliminar comillas extra al final
-            
-            try {
-                clientData = JSON.parse(jsonStr);
-            } catch (e) {
-                console.error('Error al parsear JSON:', e);
-                throw new Error('Error al procesar los datos del servidor');
-            }
+        if (!jsonMatch) {
+            throw new Error('No se encontraron datos válidos en la respuesta');
         }
 
-        if (!clientData) {
-            throw new Error('No se pudieron procesar los datos del servidor');
-        }
-
+        const clientData = JSON.parse(jsonMatch[0]);
         console.log('Datos procesados:', clientData);
 
-        // Actualizar la interfaz con los datos
-        document.getElementById('currentName').textContent = clientData.name || '-';
-        document.getElementById('currentPhone').textContent = clientData.phone || '-';
-        document.getElementById('currentEmail').textContent = clientData.email || '-';
-        document.getElementById('currentadress').textContent = clientData.direccion || '-';
-        document.getElementById('currentDiscount').textContent = clientData.descuento || '-';
-        document.getElementById('currentclasificacion').textContent = clientData.clasificacion || '-';
-        document.getElementById('currentPuntos').textContent = clientData.puntos || '-';
-        document.getElementById('currentvisitas').textContent = clientData.visitas || '-';
-        document.getElementById('currentnumerocliente').textContent = clientData.numerocliente || '-';
-        document.getElementById('currentSerial').textContent = clientData.serialNumber || '-';
-        document.getElementById('currentTimestamp').textContent = 
-            clientData.timestamp ? new Date(clientData.timestamp).toLocaleString() : '-';
+        // Actualizar el panel de lectura con los datos
+        updateInfoBlock(clientData);
 
-        updateStatus('Cliente encontrado. Acerque el chip para grabar los datos.', false);
-
-        // Iniciar escritura NFC
-        try {
-            const ndef = new NDEFReader();
-            await ndef.scan();
-
-            ndef.addEventListener("reading", async () => {
-                try {
-                    await ndef.write({
-                        records: [{
-                            recordType: "text",
-                            data: JSON.stringify(clientData)
-                        }]
-                    });
-                    updateStatus('Datos grabados en el chip correctamente ✓', false);
-                } catch (error) {
-                    console.error('Error al escribir en NFC:', error);
-                    updateStatus('Error al escribir en el chip NFC', true);
-                }
-            });
-        } catch (error) {
-            console.error('Error al iniciar NFC:', error);
-            updateStatus('Error al iniciar NFC. Verifique que NFC está activado.', true);
-        }
-
+        updateStatus('Cliente encontrado y datos actualizados correctamente.', false);
     } catch (error) {
-        clearInterval(loadingInterval);
         console.error('Error en la búsqueda:', error);
-        if (error.name === 'AbortError') {
-            updateStatus('La búsqueda está tardando demasiado. Por favor, inténtelo de nuevo.', true);
-        } else {
-            updateStatus('Error de conexión con el servidor. Por favor, inténtelo de nuevo.', true);
-        }
+        updateStatus('No se pudo completar la búsqueda. Inténtalo de nuevo.', true);
     }
 });
 
