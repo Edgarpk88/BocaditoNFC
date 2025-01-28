@@ -278,19 +278,10 @@ function updateStatus(message, isError = false) {
 
 function updateInfoBlock(data) {
     try {
-        // Si los datos vienen como string con \n, primero limpiamos el formato
-        let parsedData;
-        if (typeof data.text === 'string') {
-            // Limpiar el string de los \n y espacios extra
-            const cleanText = data.text.replace(/\\n/g, '').replace(/\s+/g, ' ').trim();
-            parsedData = JSON.parse(cleanText);
-        } else {
-            parsedData = data.text;
-        }
+        // Parsear los datos si son un string
+        const parsedData = typeof data.text === 'string' ? JSON.parse(data.text) : data.text;
 
-        console.log('Datos procesados:', parsedData); // Debug
-
-        // Actualizar los elementos del DOM directamente con los valores procesados
+        // Actualizar los elementos del DOM
         currentName.textContent = parsedData.name || '-';
         currentPhone.textContent = parsedData.phone || '-';
         currentEmail.textContent = parsedData.email || '-';
@@ -304,36 +295,9 @@ function updateInfoBlock(data) {
         document.getElementById('currentnumerocliente').textContent = parsedData.numerocliente || '-';
     } catch (error) {
         console.error('Error al actualizar la información en el bloque:', error);
-        console.error('Datos recibidos:', data); // Debug
         updateStatus('Error al mostrar los datos recibidos.', true);
     }
 }
-
-// Ajuste en la función de búsqueda donde se llama a updateInfoBlock
-const clientData = await response.json();
-console.log('Respuesta del servidor:', clientData); // Debug
-
-// Limpiar el formato de la respuesta si es necesario
-let cleanData;
-if (typeof clientData === 'string') {
-    cleanData = clientData.replace(/\\n/g, '').replace(/\s+/g, ' ').trim();
-    try {
-        cleanData = JSON.parse(cleanData);
-    } catch (e) {
-        console.error('Error al parsear la respuesta:', e);
-    }
-} else {
-    cleanData = clientData;
-}
-
-// Actualizar la información en pantalla
-updateInfoBlock({
-    text: cleanData,
-    serialNumber: cleanData.serialNumber || '-',
-    timestamp: cleanData.timestamp || new Date().toISOString()
-});
-
-     
 
 function checkNFCAvailability() {
     if ('NDEFReader' in window) {
@@ -348,9 +312,6 @@ function checkNFCAvailability() {
     updateStatus('Tu dispositivo o navegador no soporta NFC.', true);
     return false;
 }
-
-
-     
 // Función para el botón buscar
 buscarButton.addEventListener('click', () => {
     buscarContainer.classList.toggle('visible');
@@ -631,7 +592,7 @@ scanButton.addEventListener('click', startNFCScan);
 checkNFCAvailability();
 </script>
     <a href="https://sites.google.com/view/hdcopy3d/inicio" class="signature" target="_blank">
-    Diseñado por NeuroFay torm
+    Diseñado por NeuroFay Lion
 </a>
 </body>
 </html>
