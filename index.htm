@@ -321,7 +321,6 @@ buscarButton.addEventListener('click', () => {
 });
 // Función para el botón buscar
 
-// Función para el botón buscar
 buscarOkButton.addEventListener('click', async () => {
     const name = buscarNameInput.value.trim();
     const phone = buscarPhoneInput.value.trim();
@@ -340,26 +339,26 @@ buscarOkButton.addEventListener('click', async () => {
         timestamp: new Date().toISOString()
     };
 
+    let dotsInterval;
     try {
-        updateStatus('Buscando cliente...');
-        
+        // Iniciar la animación de puntos suspensivos
+        let dots = 0;
+        dotsInterval = setInterval(() => {
+            dots = (dots + 1) % 4;
+            updateStatus('Buscando cliente' + '.'.repeat(dots));
+        }, 500);
+
         const url = new URL('https://n8n-n8n.dlyqti.easypanel.host/webhook/fab43c1a-ef5d-43d8-ae52-3e2d891496dd');
         url.searchParams.append('text', 'buscarCLIENTE ' + JSON.stringify(searchData));
-        
-        updateStatus('Esperando respuesta del servidor...');
-        
-        const response = await fetch(url, {
-            method: 'GET',
-        });
 
+        const response = await fetch(url, { method: 'GET' });
         const rawData = await response.json();
-        // Parseamos el string del output para obtener el objeto real
         const clientData = JSON.parse(rawData[0].output);
-        
+
+        clearInterval(dotsInterval); // Detener la animación
         updateStatus('Cliente encontrado ✓');
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        updateInfoBlock({text: clientData});
-        
+        updateInfoBlock({ text: clientData });
+
         updateStatus('Acerca el chip NFC para grabar los datos...');
         const ndef = new NDEFReader();
         await ndef.scan();
@@ -375,16 +374,11 @@ buscarOkButton.addEventListener('click', async () => {
                 };
 
                 await ndef.write({
-                    records: [{
-                        recordType: "text",
-                        data: JSON.stringify(dataToWrite)
-                    }]
+                    records: [{ recordType: "text", data: JSON.stringify(dataToWrite) }]
                 });
 
                 updateStatus('Datos grabados en el chip correctamente ✓');
-                if ('vibrate' in navigator) {
-                    navigator.vibrate(200);
-                }
+                if ('vibrate' in navigator) navigator.vibrate(200);
 
                 setTimeout(() => {
                     buscarNameInput.value = '';
@@ -401,14 +395,9 @@ buscarOkButton.addEventListener('click', async () => {
         });
 
     } catch (error) {
+        clearInterval(dotsInterval); // Asegurarse de detener la animación en caso de error
         console.error('Error en la búsqueda:', error);
-        if (error.name === 'NotAllowedError') {
-            updateStatus('Activa NFC en tu dispositivo y da permiso a la web', true);
-        } else if (error.name === 'NotReadableError') {
-            updateStatus('No se pudo acceder al chip NFC', true);
-        } else {
-            updateStatus('Error al buscar el cliente', true);
-        }
+        updateStatus('Error al buscar el cliente', true);
     }
 });
 
