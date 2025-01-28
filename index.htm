@@ -333,17 +333,25 @@ buscarOkButton.addEventListener('click', async () => {
     const searchData = {
         name: name,
         phone: phone,
-        email: email,
-        serialNumber: ''
+        email: email
     };
 
     try {
+        updateStatus('Buscando cliente, por favor espere...');
         const url = 'https://n8n-n8n.dlyqti.easypanel.host/webhook/fab43c1a-ef5d-43d8-ae52-3e2d891496dd';
+        
+        // Configurar el timeout a 70 segundos (70000 ms)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 70000);
+
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(searchData),
+            signal: controller.signal
         });
+
+        clearTimeout(timeoutId); // Limpiar el timeout si la respuesta llega antes
 
         if (!response.ok) {
             throw new Error('Error en el servidor al buscar el cliente.');
@@ -357,17 +365,48 @@ buscarOkButton.addEventListener('click', async () => {
         }
 
         console.log('Datos recibidos del servidor:', clientData);
-
+        
+        // Actualizar la información en pantalla
         updateInfoBlock({
-            text: JSON.stringify(clientData),
+            text: clientData,
             serialNumber: clientData.serialNumber || '-',
-            timestamp: clientData.timestamp || new Date().toISOString(),
+            timestamp: clientData.timestamp || new Date().toISOString()
         });
 
-        updateStatus('Cliente encontrado. Acerque el chip para grabar los datos.', false);
+        // Solo activar el NFC si se encontraron datos
+        if (Object.keys(clientData).length > 0) {
+            updateStatus('Cliente encontrado. Acerque el chip para grabar los datos.', false);
+            // Iniciar escritura NFC
+            try {
+                const ndef = new NDEFReader();
+                await ndef.scan();
+
+                ndef.addEventListener("reading", async () => {
+                    try {
+                        await ndef.write({
+                            records: [{
+                                recordType: "text",
+                                data: JSON.stringify(clientData)
+                            }]
+                        });
+                        updateStatus('Datos grabados en el chip correctamente ✓', false);
+                    } catch (error) {
+                        console.error('Error al escribir en NFC:', error);
+                        updateStatus('Error al escribir en el chip NFC', true);
+                    }
+                });
+            } catch (error) {
+                console.error('Error al iniciar NFC:', error);
+                updateStatus('Error al iniciar NFC. Verifique que NFC está activado.', true);
+            }
+        }
     } catch (error) {
         console.error('Error en la búsqueda:', error);
-        updateStatus('Error en la búsqueda. Verifica la conexión o intenta más tarde.', true);
+        if (error.name === 'AbortError') {
+            updateStatus('La búsqueda está tardando demasiado. Por favor, inténtelo de nuevo.', true);
+        } else {
+            updateStatus('Error en la búsqueda. Verifica la conexión o intenta más tarde.', true);
+        }
     }
 });
 
@@ -534,7 +573,7 @@ scanButton.addEventListener('click', startNFCScan);
 checkNFCAvailability();
 </script>
     <a href="https://sites.google.com/view/hdcopy3d/inicio" class="signature" target="_blank">
-    Diseñado por NeuroFay 3D
+    Diseñado por NeuroFay 3D locura
 </a>
 </body>
 </html>
