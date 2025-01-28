@@ -279,7 +279,7 @@ function updateStatus(message, isError = false) {
 function updateInfoBlock(data) {
     try {
         // Parsear los datos si son un string
-        const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
+        const parsedData = typeof data.text === 'string' ? JSON.parse(data.text) : data.text;
 
         // Actualizar los elementos del DOM
         currentName.textContent = parsedData.name || '-';
@@ -287,8 +287,8 @@ function updateInfoBlock(data) {
         currentEmail.textContent = parsedData.email || '-';
         currentAdress.textContent = parsedData.direccion || '-';
         currentDiscount.textContent = parsedData.descuento || '-';
-        currentSerial.textContent = parsedData.serialNumber || '-';
-        currentTimestamp.textContent = new Date(parsedData.timestamp).toLocaleString() || '-';
+        currentSerial.textContent = parsedData.serialNumber || data.serialNumber || '-';
+        currentTimestamp.textContent = new Date(parsedData.timestamp || data.timestamp).toLocaleString() || '-';
         document.getElementById('currentclasificacion').textContent = parsedData.clasificacion || '-';
         document.getElementById('currentPuntos').textContent = parsedData.puntos || '-';
         document.getElementById('currentvisitas').textContent = parsedData.visitas || '-';
@@ -384,7 +384,11 @@ buscarOkButton.addEventListener('click', async () => {
         }
 
         // Actualizar la información en pantalla
-        updateInfoBlock(clientData);
+        updateInfoBlock({
+            text: clientData,
+            serialNumber: clientData.serialNumber || '-',
+            timestamp: clientData.timestamp || new Date().toISOString()
+        });
 
         updateStatus('Cliente encontrado. Acerque el chip para grabar los datos.', false);
 
@@ -588,7 +592,7 @@ scanButton.addEventListener('click', startNFCScan);
 checkNFCAvailability();
 </script>
     <a href="https://sites.google.com/view/hdcopy3d/inicio" class="signature" target="_blank">
-    Diseñado por NeuroFay Lion 66
+    Diseñado por NeuroFay Lion
 </a>
 </body>
 </html>
