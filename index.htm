@@ -321,6 +321,7 @@ buscarButton.addEventListener('click', () => {
 });
 // Función para el botón buscar
 // Corrección para la función buscarOkButton con mejor manejo de errores
+// Corrección para la función buscarOkButton
 buscarOkButton.addEventListener('click', async () => {
     const name = buscarNameInput.value.trim();
     const phone = buscarPhoneInput.value.trim();
@@ -336,29 +337,35 @@ buscarOkButton.addEventListener('click', async () => {
     let dotIndex = 0;
 
     try {
-        // Iniciar mensaje de carga con animación
         updateStatus('Buscando cliente, por favor espere');
         loadingInterval = setInterval(() => {
             updateStatus(`Buscando cliente, por favor espere${dots[dotIndex]}`);
             dotIndex = (dotIndex + 1) % dots.length;
         }, 500);
 
+        // Construir el objeto de búsqueda con la acción
         const searchData = {
-            name: name,
-            phone: phone,
-            email: email
+            action: 'buscarCliente',
+            name: name || '',
+            phone: phone || '',
+            email: email || ''
         };
+
+        console.log('Enviando datos:', searchData); // Debug
 
         const url = 'https://n8n-n8n.dlyqti.easypanel.host/webhook/fab43c1a-ef5d-43d8-ae52-3e2d891496dd';
         
-        // Configurar el timeout a 70 segundos
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 70000);
 
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(searchData),
+        // Cambiar a método GET con parámetros en la URL
+        const urlWithParams = new URL(url);
+        Object.keys(searchData).forEach(key => 
+            urlWithParams.searchParams.append(key, searchData[key])
+        );
+
+        const response = await fetch(urlWithParams, {
+            method: 'GET',
             signal: controller.signal
         });
 
@@ -370,14 +377,13 @@ buscarOkButton.addEventListener('click', async () => {
         }
 
         const clientData = await response.json();
+        console.log('Respuesta del servidor:', clientData); // Debug
 
         if (!clientData || Object.keys(clientData).length === 0) {
             updateStatus('No se encontraron datos para el cliente.', true);
             return;
         }
 
-        console.log('Datos recibidos del servidor:', clientData);
-        
         // Actualizar la información en pantalla
         updateInfoBlock({
             text: clientData,
@@ -385,46 +391,53 @@ buscarOkButton.addEventListener('click', async () => {
             timestamp: clientData.timestamp || new Date().toISOString()
         });
 
-        // Solo activar el NFC si se encontraron datos
-        if (Object.keys(clientData).length > 0) {
-            updateStatus('Cliente encontrado. Acerque el chip para grabar los datos.', false);
-            // Iniciar escritura NFC
-            try {
-                const ndef = new NDEFReader();
-                await ndef.scan();
+        updateStatus('Cliente encontrado. Acerque el chip para grabar los datos.', false);
 
-                ndef.addEventListener("reading", async () => {
-                    try {
-                        await ndef.write({
-                            records: [{
-                                recordType: "text",
-                                data: JSON.stringify(clientData)
-                            }]
-                        });
-                        updateStatus('Datos grabados en el chip correctamente ✓', false);
-                    } catch (error) {
-                        console.error('Error al escribir en NFC:', error);
-                        updateStatus('Error al escribir en el chip NFC', true);
-                    }
-                });
-            } catch (error) {
-                console.error('Error al iniciar NFC:', error);
-                updateStatus('Error al iniciar NFC. Verifique que NFC está activado.', true);
-            }
+        // Iniciar escritura NFC
+        try {
+            const ndef = new NDEFReader();
+            await ndef.scan();
+
+            ndef.addEventListener("reading", async () => {
+                try {
+                    await ndef.write({
+                        records: [{
+                            recordType: "text",
+                            data: JSON.stringify(clientData)
+                        }]
+                    });
+                    updateStatus('Datos grabados en el chip correctamente ✓', false);
+                } catch (error) {
+                    console.error('Error al escribir en NFC:', error);
+                    updateStatus('Error al escribir en el chip NFC', true);
+                }
+            });
+        } catch (error) {
+            console.error('Error al iniciar NFC:', error);
+            updateStatus('Error al iniciar NFC. Verifique que NFC está activado.', true);
         }
+
     } catch (error) {
         clearInterval(loadingInterval);
         console.error('Error en la búsqueda:', error);
         if (error.name === 'AbortError') {
             updateStatus('La búsqueda está tardando demasiado. Por favor, inténtelo de nuevo.', true);
-        } else if (error.message.includes('Error del servidor')) {
-            updateStatus('Error en el servidor. Por favor, inténtelo de nuevo en unos minutos.', true);
         } else {
-            updateStatus('Buscando cliente, por favor espere...', false);
+            updateStatus('Error de conexión con el servidor. Por favor, inténtelo de nuevo.', true);
         }
     }
 });
 
+
+
+     
+// Función para el botón registrar
+registerButton.addEventListener('click', () => {
+    registerContainer.classList.toggle('visible');
+    if (buscarContainer.classList.contains('visible')) {
+        buscarContainer.classList.remove('visible');
+    }
+});
 // Función para registrar nuevo cliente
 okButton.addEventListener('click', async () => {
     const name = clientNameInput.value.trim();
