@@ -182,6 +182,13 @@
             <button id="registerOkButton" class="ok-button">OK</button>
         </div>
 
+        <div id="buscarContainer" class="buscar-container">
+            <input type="text" id="buscarName" class="register-input" placeholder="Nombre del cliente">
+            <input type="tel" id="buscarPhone" class="register-input" placeholder="Teléfono">
+            <input type="email" id="buscarEmail" class="register-input" placeholder="Email">
+            <button id="buscarOkButton" class="ok-button">OK</button>
+        </div>
+
         <button id="scanButton" class="button">Escanear NFC</button>
         <div id="status" class="status"></div>
         <div id="infoBlock" class="info-block">
@@ -217,6 +224,14 @@
             <div class="info-item">
                 <span class="info-label">Numero de Visitas:</span>
                 <span id="currentvisitas" class="info-value">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Número Serie:</span>
+                <span id="currentSerial" class="info-value">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Número Cliente:</span>
+                <span id="currentnumerocliente" class="info-value">-</span>
             </div>
             <div class="info-item">
                 <span class="info-label">Última Visita:</span>
@@ -550,7 +565,7 @@ scanButton.addEventListener('click', startNFCScan);
 checkNFCAvailability();
 </script>
     <a href="https://sites.google.com/view/hdcopy3d/inicio" class="signature" target="_blank">
-    Diseñado por NeuroFay paso
+    Diseñado por NeuroFay
 </a>
 </body>
 </html>
