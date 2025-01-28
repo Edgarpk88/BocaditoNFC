@@ -324,32 +324,6 @@ buscarButton.addEventListener('click', () => {
 // Corrección para la función buscarOkButton
 // Corrección para la función buscarOkButton con el formato específico requerido
 // Función específica para actualizar los datos de búsqueda
-function updateSearchInfo(data) {
-    try {
-        // Parsear los datos si son un string
-        const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
-
-        // Actualizar los elementos del DOM específicos para la búsqueda
-        document.getElementById('currentName').textContent = parsedData.name || '-';
-        document.getElementById('currentPhone').textContent = parsedData.phone || '-';
-        document.getElementById('currentEmail').textContent = parsedData.email || '-';
-        document.getElementById('currentadress').textContent = parsedData.direccion || '-';
-        document.getElementById('currentDiscount').textContent = parsedData.descuento || '-';
-        document.getElementById('currentclasificacion').textContent = parsedData.clasificacion || '-';
-        document.getElementById('currentPuntos').textContent = parsedData.puntos || '-';
-        document.getElementById('currentvisitas').textContent = parsedData.visitas || '-';
-        document.getElementById('currentnumerocliente').textContent = parsedData.numerocliente || '-';
-        document.getElementById('currentSerial').textContent = parsedData.serialNumber || '-';
-        document.getElementById('currentTimestamp').textContent = new Date(parsedData.timestamp).toLocaleString() || '-';
-
-        console.log('Datos de búsqueda actualizados correctamente:', parsedData);
-    } catch (error) {
-        console.error('Error al actualizar la información de búsqueda:', error);
-        updateStatus('Error al mostrar los datos de búsqueda.', true);
-    }
-}
-
-// Función para el botón buscarOkButton
 buscarOkButton.addEventListener('click', async () => {
     const name = buscarNameInput.value.trim();
     const phone = buscarPhoneInput.value.trim();
@@ -371,7 +345,6 @@ buscarOkButton.addEventListener('click', async () => {
             dotIndex = (dotIndex + 1) % dots.length;
         }, 500);
 
-        // Crear el objeto de búsqueda en el formato requerido
         const searchObj = {
             name: name,
             phone: phone,
@@ -380,12 +353,9 @@ buscarOkButton.addEventListener('click', async () => {
             timestamp: ""
         };
 
-        // Construir la URL con el formato exacto requerido
         const url = new URL('https://n8n-n8n.dlyqti.easypanel.host/webhook/fab43c1a-ef5d-43d8-ae52-3e2d891496dd');
         const textParam = `buscarCLIENTE ${JSON.stringify(searchObj)}`;
         url.searchParams.append('text', textParam);
-
-        console.log('URL de búsqueda:', url.toString()); // Debug
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 70000);
@@ -402,15 +372,23 @@ buscarOkButton.addEventListener('click', async () => {
             throw new Error(`Error del servidor: ${response.status}`);
         }
 
-        const clientData = await response.json();
-        console.log('Respuesta del servidor:', clientData); // Debug
+        const rawData = await response.json();
+        
+        // Procesamiento de los datos recibidos
+        let clientData;
+        if (Array.isArray(rawData) && rawData.length > 0 && rawData[0].output) {
+            // Parsear el string JSON dentro del output
+            clientData = JSON.parse(rawData[0].output);
+        } else {
+            throw new Error('Formato de datos no válido');
+        }
 
         if (!clientData || Object.keys(clientData).length === 0) {
             updateStatus('No se encontraron datos para el cliente.', true);
             return;
         }
 
-        // Actualizar la información en pantalla usando la función específica
+        // Actualizar la información en pantalla
         updateSearchInfo(clientData);
 
         updateStatus('Cliente encontrado. Acerque el chip para grabar los datos.', false);
@@ -449,6 +427,31 @@ buscarOkButton.addEventListener('click', async () => {
         }
     }
 });
+
+function updateSearchInfo(data) {
+    try {
+        // Normalizar las fechas
+        const timestamp = data.timestamp ? new Date(data.timestamp).toLocaleString() : '-';
+        
+        // Actualizar los elementos del DOM
+        document.getElementById('currentName').textContent = data.name || '-';
+        document.getElementById('currentPhone').textContent = data.phone || '-';
+        document.getElementById('currentEmail').textContent = data.email || '-';
+        document.getElementById('currentadress').textContent = data.direccion || '-';
+        document.getElementById('currentDiscount').textContent = data.descuento || '-';
+        document.getElementById('currentclasificacion').textContent = data.clasificacion || '-';
+        document.getElementById('currentPuntos').textContent = data.puntos || '-';
+        document.getElementById('currentvisitas').textContent = data.visitas || '-';
+        document.getElementById('currentnumerocliente').textContent = data.numerocliente || '-';
+        document.getElementById('currentSerial').textContent = data.serialNumber || '-';
+        document.getElementById('currentTimestamp').textContent = timestamp;
+
+        console.log('Datos de búsqueda actualizados correctamente:', data);
+    } catch (error) {
+        console.error('Error al actualizar la información de búsqueda:', error);
+        updateStatus('Error al mostrar los datos de búsqueda.', true);
+    }
+}
 
      
      
