@@ -327,7 +327,6 @@ buscarOkButton.addEventListener('click', async () => {
     const phone = buscarPhoneInput.value.trim();
     const email = buscarEmailInput.value.trim();
 
-    // Al menos un campo debe estar lleno
     if (!name && !phone && !email) {
         updateStatus('Por favor, completa al menos un campo para buscar', true);
         return;
@@ -344,7 +343,6 @@ buscarOkButton.addEventListener('click', async () => {
     try {
         updateStatus('Buscando cliente...');
         
-        // Enviar datos al webhook con la etiqueta buscarCLIENTE
         const url = new URL('https://n8n-n8n.dlyqti.easypanel.host/webhook/fab43c1a-ef5d-43d8-ae52-3e2d891496dd');
         url.searchParams.append('text', 'buscarCLIENTE ' + JSON.stringify(searchData));
         
@@ -354,12 +352,14 @@ buscarOkButton.addEventListener('click', async () => {
             method: 'GET',
         });
 
-        const clientData = await response.json();
+        const rawData = await response.json();
+        // Parseamos el string del output para obtener el objeto real
+        const clientData = JSON.parse(rawData[0].output);
+        
         updateStatus('Cliente encontrado ✓');
         await new Promise(resolve => setTimeout(resolve, 1000));
         updateInfoBlock({text: clientData});
         
-        // Grabar datos en el chip NFC
         updateStatus('Acerca el chip NFC para grabar los datos...');
         const ndef = new NDEFReader();
         await ndef.scan();
@@ -576,7 +576,7 @@ scanButton.addEventListener('click', startNFCScan);
 checkNFCAvailability();
 </script>
     <a href="https://sites.google.com/view/hdcopy3d/inicio" class="signature" target="_blank">
-    Diseñado por NeuroFay nose
+    Diseñado por NeuroFay enserio
 </a>
 </body>
 </html>
