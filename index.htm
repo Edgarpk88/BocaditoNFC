@@ -372,24 +372,35 @@ buscarOkButton.addEventListener('click', async () => {
             throw new Error(`Error del servidor: ${response.status}`);
         }
 
-        // Obtener los datos y procesarlos
-        const responseData = await response.json();
-        console.log('Respuesta del servidor:', responseData);
+        // Obtener los datos como texto y procesarlos
+        const responseText = await response.text();
+        console.log('Respuesta cruda:', responseText);
 
-        // Extraer los datos de las partes numeradas
-        const clientData = {};
-        for (let i = 1; i <= Object.keys(responseData.$json).length; i++) {
-            const part = responseData.$json[`part${i}`];
-            if (part) {
-                Object.assign(clientData, part);
+        // Procesar la respuesta específica de n8n
+        let clientData = null;
+        
+        // Extraer el JSON del string usando una expresión regular
+        const jsonMatch = responseText.match(/\{[^]*\}/);
+        if (jsonMatch) {
+            const jsonStr = jsonMatch[0]
+                .replace(/\\n\s*/g, '') // Eliminar \n y espacios
+                .replace(/\\"/g, '"')   // Reemplazar \" por "
+                .replace(/"\{/g, '{')   // Eliminar comillas extra al inicio
+                .replace(/\}"/g, '}');  // Eliminar comillas extra al final
+            
+            try {
+                clientData = JSON.parse(jsonStr);
+            } catch (e) {
+                console.error('Error al parsear JSON:', e);
+                throw new Error('Error al procesar los datos del servidor');
             }
         }
 
-        console.log('Datos procesados:', clientData);
-
-        if (!clientData || Object.keys(clientData).length === 0) {
-            throw new Error('No se encontraron datos del cliente');
+        if (!clientData) {
+            throw new Error('No se pudieron procesar los datos del servidor');
         }
+
+        console.log('Datos procesados:', clientData);
 
         // Actualizar la interfaz con los datos
         document.getElementById('currentName').textContent = clientData.name || '-';
