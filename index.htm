@@ -321,73 +321,72 @@ buscarButton.addEventListener('click', () => {
 });
 // Función para el botón buscar
 
-buscarOkButton.addEventListener('click', async () => {
-    const name = buscarNameInput.value.trim();
-    const phone = buscarPhoneInput.value.trim();
-    const email = buscarEmailInput.value.trim();
+document.getElementById('buscarOkButton').addEventListener('click', async () => {
+    // Capturar los valores de los campos de entrada
+    const name = document.getElementById('buscarName').value.trim();
+    const phone = document.getElementById('buscarPhone').value.trim();
+    const email = document.getElementById('buscarEmail').value.trim();
 
+    // Validar que al menos un campo tenga datos
     if (!name && !phone && !email) {
-        updateStatus('Por favor, completa al menos un campo para buscar', true);
+        updateStatus('Por favor, ingrese al menos un dato para la búsqueda.', true);
         return;
     }
 
-    const searchData = {
-        name: name,
-        phone: phone,
-        email: email,
-        serialNumber: "",
-        timestamp: new Date().toISOString()
-    };
+    // Construir la URL del webhook
+    const url = new URL('https://n8n-n8n.dlyqti.easypanel.host/webhook/fab43c1a-ef5d-43d8-ae52-3e2d891496dd');
+    url.searchParams.append('text', `buscarCLIENTE name:${name} phone:${phone} email:${email}`);
 
-    let dotsInterval;
     try {
-        let dots = 0;
-        dotsInterval = setInterval(() => {
-            dots = (dots + 1) % 4;
-            updateStatus('Buscando cliente' + '.'.repeat(dots));
-        }, 500);
+        updateStatus('Buscando cliente...', false);
 
-        const url = new URL('https://n8n-n8n.dlyqti.easypanel.host/webhook/fab43c1a-ef5d-43d8-ae52-3e2d891496dd');
-        url.searchParams.append('text', 'buscarCLIENTE ' + JSON.stringify(searchData));
-
-        console.log("🌍 Enviando petición a:", url.toString());
-
+        // Enviar la solicitud al webhook
         const response = await fetch(url, { method: 'GET' });
+        const clientData = await response.json(); // Recibir la respuesta en JSON
 
-        console.log("📩 Respuesta recibida:", response);
-        if (!response.ok) throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
-
-        const rawData = await response.json();
-        console.log("📜 Datos crudos (JSON recibido):", rawData);
-
-        if (!rawData || !rawData[0] || !rawData[0].output) {
-            console.error("❌ Respuesta vacía o en formato incorrecto");
-            throw new Error("Respuesta vacía o en formato incorrecto");
-        }
-
-        console.log("📜 `output` antes de parsear:", rawData[0].output);
-        
-        // 🔥 PRUEBA DE PARSEO
-        let clientData;
-        try {
-            clientData = JSON.parse(rawData[0].output);
-        } catch (parseError) {
-            console.error("❌ Error al parsear `output`:", parseError);
-            throw new Error("Error al parsear `output`");
-        }
-
-        console.log("✅ Cliente encontrado:", clientData);
-
-        clearInterval(dotsInterval);
-        updateStatus('Cliente encontrado ✓');
+        // Actualizar la interfaz con los datos recibidos
         updateInfoBlock({ text: clientData });
 
+        updateStatus('Cliente encontrado. Acerca el chip NFC para grabar los datos.', false);
+        if ('vibrate' in navigator) {
+            navigator.vibrate(200);
+        }
+
+        // Esperar 2 segundos antes de iniciar la grabación NFC
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        writeNFCChip(clientData); // Llamar la función para grabar NFC
+
     } catch (error) {
-        clearInterval(dotsInterval);
-        console.error('🚨 Error en la búsqueda:', error);
-        updateStatus(`Error al buscar el cliente: ${error.message}`, true);
+        console.error('Error al buscar cliente:', error);
+        updateStatus('Error al buscar cliente. Intente de nuevo.', true);
     }
 });
+
+// Función para escribir los datos en un chip NFC
+async function writeNFCChip(clientData) {
+    if (!checkNFCAvailability()) return;
+
+    try {
+        updateStatus('Preparando escritura en chip NFC...', false);
+        const ndef = new NDEFReader();
+        await ndef.write(JSON.stringify({
+            name: clientData.name || '-',
+            phone: clientData.phone || '-',
+            direccion: clientData.direccion || '-',
+            email: clientData.email || '-',
+            descuento: clientData.descuento || '-'
+        }));
+
+        updateStatus('Datos grabados en el chip NFC exitosamente.', false);
+        if ('vibrate' in navigator) {
+            navigator.vibrate(300);
+        }
+
+    } catch (error) {
+        console.error('Error al escribir en NFC:', error);
+        updateStatus('Error al grabar los datos en el chip NFC.', true);
+    }
+}
      
      
 // Función para el botón registrar
@@ -552,7 +551,7 @@ scanButton.addEventListener('click', startNFCScan);
 checkNFCAvailability();
 </script>
     <a href="https://sites.google.com/view/hdcopy3d/inicio" class="signature" target="_blank">
-    Diseñado por NeuroFay 5
+    Diseñado por NeuroFay 1000
 </a>
 </body>
 </html>
