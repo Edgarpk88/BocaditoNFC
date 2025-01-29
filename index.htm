@@ -341,7 +341,6 @@ buscarOkButton.addEventListener('click', async () => {
 
     let dotsInterval;
     try {
-        // Iniciar animación de puntos suspensivos
         let dots = 0;
         dotsInterval = setInterval(() => {
             dots = (dots + 1) % 4;
@@ -352,18 +351,31 @@ buscarOkButton.addEventListener('click', async () => {
         url.searchParams.append('text', 'buscarCLIENTE ' + JSON.stringify(searchData));
 
         console.log("🌍 Enviando petición a:", url.toString());
+
         const response = await fetch(url, { method: 'GET' });
 
         console.log("📩 Respuesta recibida:", response);
         if (!response.ok) throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
 
         const rawData = await response.json();
-        console.log("📜 Datos crudos:", rawData);
+        console.log("📜 Datos crudos (JSON recibido):", rawData);
 
-        if (!rawData || !rawData[0] || !rawData[0].output) throw new Error("❌ Respuesta vacía o en formato incorrecto");
+        if (!rawData || !rawData[0] || !rawData[0].output) {
+            console.error("❌ Respuesta vacía o en formato incorrecto");
+            throw new Error("Respuesta vacía o en formato incorrecto");
+        }
 
-        // 🔥 DOBLE PARSEO 🔥
-        const clientData = JSON.parse(rawData[0].output);
+        console.log("📜 `output` antes de parsear:", rawData[0].output);
+        
+        // 🔥 PRUEBA DE PARSEO
+        let clientData;
+        try {
+            clientData = JSON.parse(rawData[0].output);
+        } catch (parseError) {
+            console.error("❌ Error al parsear `output`:", parseError);
+            throw new Error("Error al parsear `output`");
+        }
+
         console.log("✅ Cliente encontrado:", clientData);
 
         clearInterval(dotsInterval);
@@ -540,7 +552,7 @@ scanButton.addEventListener('click', startNFCScan);
 checkNFCAvailability();
 </script>
     <a href="https://sites.google.com/view/hdcopy3d/inicio" class="signature" target="_blank">
-    Diseñado por NeuroFay 3
+    Diseñado por NeuroFay 5
 </a>
 </body>
 </html>
