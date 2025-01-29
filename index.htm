@@ -360,10 +360,10 @@ buscarOkButton.addEventListener('click', async () => {
         const rawData = await response.json();
         console.log("📜 Datos crudos:", rawData);
 
-        if (!rawData || !rawData[0]) throw new Error("❌ Respuesta vacía o en formato incorrecto");
+        if (!rawData || !rawData[0] || !rawData[0].output) throw new Error("❌ Respuesta vacía o en formato incorrecto");
 
-        // Usar los datos tal cual, sin `JSON.parse()`
-        const clientData = rawData[0];
+        // 🔥 DOBLE PARSEO 🔥
+        const clientData = JSON.parse(rawData[0].output);
         console.log("✅ Cliente encontrado:", clientData);
 
         clearInterval(dotsInterval);
@@ -540,7 +540,7 @@ scanButton.addEventListener('click', startNFCScan);
 checkNFCAvailability();
 </script>
     <a href="https://sites.google.com/view/hdcopy3d/inicio" class="signature" target="_blank">
-    Diseñado por NeuroFay 2
+    Diseñado por NeuroFay 3
 </a>
 </body>
 </html>
